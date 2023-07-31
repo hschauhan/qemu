@@ -51,6 +51,7 @@
 #include "hw/acpi/aml-build.h"
 #include "qapi/qapi-visit-common.h"
 #include "hw/misc/riscv_rpmi.h"
+#include "hw/misc/riscv_rpmi_transport.h"
 
 static const MemMapEntry virt_memmap[] = {
     [VIRT_DEBUG] =        {        0x0,         0x100 },
@@ -1198,6 +1199,7 @@ static void create_fdt(RISCVVirtState *s, const MemMapEntry *memmap)
             uint64_t shm_base = s->memmap[VIRT_RPMI_SHMEM].base,
                      db_base = s->memmap[VIRT_RPMI_DOORBELL].base,
                      fcm_base = s->memmap[VIRT_RPMI_FCM].base;
+            uint32_t flags = 0;
 
             if (i) {
                 /*
@@ -1216,6 +1218,10 @@ static void create_fdt(RISCVVirtState *s, const MemMapEntry *memmap)
                     error_report("can't find hart count for socket%d", i - 1);
                     exit(1);
                 }
+
+                flags = 1 << RPMI_XPORT_TYPE_SOCKET;
+            } else {
+                flags = 1 << RPMI_XPORT_TYPE_SOC;
             }
 
             create_fdt_rpmi_nodes(s, i, shm_base + (shm_sz * i),
@@ -1224,7 +1230,7 @@ static void create_fdt(RISCVVirtState *s, const MemMapEntry *memmap)
             riscv_rpmi_create(db_base + (db_sz * i),
                               shm_base + (shm_sz * i), shm_sz,
                               fcm_base + (fcm_sz * i), fcm_sz,
-                              base_hartid, hart_count, false);
+                              base_hartid, hart_count, flags);
         }
     } else {
         create_fdt_reset(s, memmap, &phandle);
