@@ -23,6 +23,8 @@ riscv_ss.add(files(
   'zce_helper.c'
 ))
 riscv_ss.add(when: 'CONFIG_KVM', if_true: files('kvm.c'), if_false: files('kvm-stub.c'))
+riscv_ss.add(when: 'CONFIG_RISCV_RAS', if_true: files('riscv_ras.c'))
+riscv_ss.add(when: 'CONFIG_RISCV_RAS', if_true: files('riscv_ras_reference.c'))
 
 riscv_softmmu_ss = ss.source_set()
 riscv_softmmu_ss.add(files(
