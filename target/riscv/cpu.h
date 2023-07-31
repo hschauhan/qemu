@@ -389,6 +389,7 @@ struct CPUArchState {
     uint64_t kvm_timer_compare;
     uint64_t kvm_timer_state;
     uint64_t kvm_timer_frequency;
+    bool (*wfi_cb)(void *);
 };
 
 /*
@@ -420,6 +421,11 @@ struct ArchCPU {
 static inline int riscv_has_ext(CPURISCVState *env, target_ulong ext)
 {
     return (env->misa_ext & ext) != 0;
+}
+
+static inline void riscv_set_wfi_cb(CPURISCVState *env, void *cb)
+{
+    env->wfi_cb = cb ;
 }
 
 #include "cpu_user.h"
