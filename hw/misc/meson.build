@@ -29,7 +29,7 @@ softmmu_ss.add(when: 'CONFIG_MCHP_PFSOC_DMC', if_true: files('mchp_pfsoc_dmc.c')
 softmmu_ss.add(when: 'CONFIG_MCHP_PFSOC_IOSCB', if_true: files('mchp_pfsoc_ioscb.c'))
 softmmu_ss.add(when: 'CONFIG_MCHP_PFSOC_SYSREG', if_true: files('mchp_pfsoc_sysreg.c'))
 softmmu_ss.add(when: 'CONFIG_SIFIVE_TEST', if_true: files('sifive_test.c'))
-specific_ss.add(when: 'CONFIG_RISCV_RPMI', if_true: files('riscv_rpmi.c', 'riscv_rpmi_transport.c', 'riscv_rpmi_base.c', 'riscv_rpmi_cppc.c', 'riscv_rpmi_hsm.c', 'riscv_rpmi_reset.c'))
+specific_ss.add(when: 'CONFIG_RISCV_RPMI', if_true: files('riscv_rpmi.c', 'riscv_rpmi_transport.c', 'riscv_rpmi_base.c', 'riscv_rpmi_cppc.c', 'riscv_rpmi_hsm.c', 'riscv_rpmi_reset.c', 'riscv_rpmi_suspend.c'))
 
 softmmu_ss.add(when: 'CONFIG_SIFIVE_E_PRCI', if_true: files('sifive_e_prci.c'))
 softmmu_ss.add(when: 'CONFIG_SIFIVE_U_OTP', if_true: files('sifive_u_otp.c'))
