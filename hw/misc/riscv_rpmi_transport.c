@@ -329,6 +329,9 @@ int handle_rpmi_msg(struct rpmi_message *msg, int xport_id)
         break;
 
     case RPMI_SRVGRP_CPPC:
+        handle_rpmi_grp_cppc(msg, xport_id);
+        break;
+
     case RPMI_SRVGRP_HSM:
     case RPMI_SRVGRP_SYSTEM_RESET:
     case RPMI_SRVGRP_SYSTEM_SUSPEND:
@@ -392,11 +395,6 @@ void handle_rpmi_shm(int xport_id)
                 " for mem write, rc: %x\n", __func__, addr, result);
         return;
     }
-}
-
-int handle_rpmi_cppc_fcm(void *req_buf)
-{
-    return 0;
 }
 
 void handle_rpmi_fcm(int xport_id)
