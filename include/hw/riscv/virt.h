@@ -89,11 +89,8 @@ enum {
     VIRT_PCIE_PIO,
     VIRT_PLATFORM_BUS,
     VIRT_PCIE_ECAM,
+    VIRT_RAS,
     VIRT_LAST_MEMMAP /* Keep this entry always last */
-};
-
-enum {
-    VIRT_HIGH_PCIE_MMIO = VIRT_LAST_MEMMAP,
 };
 
 enum {
