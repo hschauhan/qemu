@@ -53,6 +53,7 @@
 #include "hw/acpi/aml-build.h"
 #include "qapi/qapi-visit-common.h"
 #include "hw/misc/riscv_rpmi.h"
+#include "hw/misc/riscv_rpmi_transport.h"
 
 /* KVM AIA only supports APLIC MSI. APLIC Wired is always emulated by QEMU. */
 static bool virt_use_kvm_aia(RISCVVirtState *s)
@@ -1188,6 +1189,7 @@ static void create_fdt(RISCVVirtState *s, const MemMapEntry *memmap)
             uint64_t shm_base = s->memmap[VIRT_RPMI_SHMEM].base,
                      db_base = s->memmap[VIRT_RPMI_DOORBELL].base,
                      fcm_base = s->memmap[VIRT_RPMI_FCM].base;
+            uint32_t flags = 0;
 
             if (i) {
                 /*
@@ -1207,8 +1209,10 @@ static void create_fdt(RISCVVirtState *s, const MemMapEntry *memmap)
                     exit(1);
                 }
 
+                flags = 1 << RPMI_XPORT_TYPE_SOCKET;
                 harts_mask = MAKE_64BIT_MASK(base_hartid, hart_count);
             } else {
+                flags = 1 << RPMI_XPORT_TYPE_SOC;
                 harts_mask = 0;
             }
 
@@ -1218,7 +1222,7 @@ static void create_fdt(RISCVVirtState *s, const MemMapEntry *memmap)
             riscv_rpmi_create(db_base + (db_sz * i),
                               shm_base + (shm_sz * i), shm_sz,
                               fcm_base + (fcm_sz * i), fcm_sz,
-                              harts_mask, false);
+                              harts_mask, flags);
         }
     } else {
         create_fdt_reset(s, memmap, &phandle);
