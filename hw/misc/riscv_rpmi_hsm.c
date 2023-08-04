@@ -188,24 +188,39 @@ int handle_rpmi_grp_hsm(struct rpmi_message *msg, int xport_id)
 
     case RPMI_HSM_SRV_GET_HART_LIST:
         uint64_t harts_mask =  rpmi_get_harts_mask(xport_id);
-        int returned = 0;
-
-        resp_data.hart_list.status = 0;
-        resp_data.hart_list.remaining = 0;
+        uint32_t hart_id, skip_count = req_data[0];
+        int i, returned = 0, remaining = 0;
 
         hart_id = 0;
-        do {
-
-            if (harts_mask & 0x01) {
-                resp_data.hart_list.hartid[returned] = hart_id;
-                returned++;
-            }
-
-            harts_mask >>= 1;
+        while (harts_mask && skip_count) {
+            if (harts_mask & 0x1)
+                skip_count--;
             hart_id++;
-        } while (harts_mask);
-        resp_data.hart_list.returned = returned;
+            harts_mask >>= 1;
+        }
 
+        for (i = 0; i < ARRAY_SIZE(resp_data.hart_list.hartid); i++) {
+             while (!(harts_mask & 0x1) && hart_id < 64) {
+                 hart_id++;
+                 harts_mask >>= 1;
+             }
+             if (!harts_mask)
+                 break;
+             resp_data.hart_list.hartid[i] = hart_id;
+             hart_id++;
+             harts_mask >>= 1;
+             returned++;
+        }
+
+        while (harts_mask) {
+            if (harts_mask & 0x1)
+                remaining++;
+            harts_mask >>= 1;
+        }
+
+        resp_data.hart_list.status = 0;
+        resp_data.hart_list.remaining = remaining;
+        resp_data.hart_list.returned = returned;
         resp_dlen = sizeof(resp_data.hart_list);
         break;
 
