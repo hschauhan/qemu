@@ -96,15 +96,14 @@ int rpmi_get_svc_grps(int xport_id)
     return xport_ctx->service_grp_mask;
 }
 
-int rpmi_get_harts_mask(int xport_id)
+uint64_t rpmi_get_harts_mask(int xport_id)
 {
     struct rpmi_xport_ctx *xport_ctx = &rpmi_xports[xport_id];
     return xport_ctx->harts_mask;
 }
 
 void rpmi_init_transport(int xport_id, hwaddr shm_addr, hwaddr reg_addr,
-                         hwaddr fcm_addr, int socket_num, uint32_t hartid_base,
-                         uint32_t num_harts)
+                         hwaddr fcm_addr, int socket_num, uint64_t harts_mask)
 {
     struct rpmi_xport_ctx *xport_ctx = &rpmi_xports[xport_id];
     int q;
@@ -123,18 +122,17 @@ void rpmi_init_transport(int xport_id, hwaddr shm_addr, hwaddr reg_addr,
 
     }
 
+    xport_ctx->harts_mask = harts_mask;
+    xport_ctx->service_grp_mask = (1 << RPMI_SRVGRP_BASE);
     if (socket_num == -1) {
         /* initialize SOC transport */
-        xport_ctx->harts_mask = 0;
-        xport_ctx->service_grp_mask = ((1 << RPMI_SRVGRP_BASE) |
-                                       (1 << RPMI_SRVGRP_SYSTEM_RESET) |
-                                       (1 << RPMI_SRVGRP_SYSTEM_SUSPEND));
-    } else {
+        xport_ctx->service_grp_mask |= ((1 << RPMI_SRVGRP_SYSTEM_RESET) |
+                                        (1 << RPMI_SRVGRP_SYSTEM_SUSPEND));
+    }
+    if (harts_mask) {
         /* initialize socket transport */
-        xport_ctx->harts_mask = MAKE_64BIT_MASK(hartid_base, num_harts);
-        xport_ctx->service_grp_mask = ((1 << RPMI_SRVGRP_BASE) |
-                                       (1 << RPMI_SRVGRP_HSM) |
-                                       (1 << RPMI_SRVGRP_CPPC));
+        xport_ctx->service_grp_mask |= ((1 << RPMI_SRVGRP_HSM) |
+                                        (1 << RPMI_SRVGRP_CPPC));
     }
 
     num_rpmi_xports++;

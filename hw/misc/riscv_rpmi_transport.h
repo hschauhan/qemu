@@ -133,13 +133,12 @@ int rpmi_transport_init(struct rpmi_transport_ctx *trans_ctx);
 void memcpy_endian(int32_t *dest, int32_t *src, int32_t len,
                 bool to_le32);
 void rpmi_init_transport(int xport_id, hwaddr shm_addr, hwaddr reg_addr,
-                         hwaddr fcm_addr, int socket_num, uint32_t hartid_base,
-                         uint32_t num_harts);
+                         hwaddr fcm_addr, int socket_num, uint64_t harts_mask);
 void handle_rpmi_shm(int xport_id);
 void handle_rpmi_fcm(int xport_id);
 hwaddr rpmi_get_fcm_base(int xport_id);
 int rpmi_get_svc_grps(int xport_id);
-int rpmi_get_harts_mask(int xport_id);
+uint64_t rpmi_get_harts_mask(int xport_id);
 
 int handle_rpmi_cppc_fcm(void *req_buf);
 int handle_rpmi_msg(struct rpmi_message *msg, int xport_id);

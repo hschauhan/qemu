@@ -90,8 +90,7 @@ static const MemoryRegionOps riscv_rpmi_ops = {
 };
 
  static Property riscv_rpmi_properties[] = {
-     DEFINE_PROP_UINT32("hartid-base", RiscvRpmiState, hartid_base, 0),
-     DEFINE_PROP_UINT32("num-harts", RiscvRpmiState, num_harts, 1),
+     DEFINE_PROP_UINT64("harts-mask", RiscvRpmiState, harts_mask, 0),
      DEFINE_PROP_UINT32("flags", RiscvRpmiState, flags, false),
      DEFINE_PROP_END_OF_LIST(),
  };
@@ -130,8 +129,8 @@ static const TypeInfo riscv_rpmi_info = {
   * Create RPMI devices.
   */
  DeviceState *riscv_rpmi_create(hwaddr db_addr, hwaddr shm_addr, int shm_sz,
-                              hwaddr fcm_addr, int fcm_sz, uint32_t hartid_base,
-                              uint32_t num_harts, uint32_t flags)
+                                hwaddr fcm_addr, int fcm_sz,
+                                uint64_t harts_mask, uint32_t flags)
  {
      DeviceState *dev = qdev_new(TYPE_RISCV_RPMI);
      MemoryRegion *address_space_mem = get_system_memory();
@@ -144,8 +143,7 @@ static const TypeInfo riscv_rpmi_info = {
      assert(!(shm_addr & 0x3));
      assert(!(fcm_addr & 0x3));
 
-     qdev_prop_set_uint32(dev, "hartid-base", hartid_base);
-     qdev_prop_set_uint32(dev, "num-harts", num_harts);
+     qdev_prop_set_uint64(dev, "harts-mask", harts_mask);
      qdev_prop_set_uint32(dev, "flags", flags ? true : false);
      sysbus_realize_and_unref(SYS_BUS_DEVICE(dev), &error_fatal);
      sysbus_mmio_map(SYS_BUS_DEVICE(dev), 0, db_addr);
@@ -170,7 +168,7 @@ static const TypeInfo riscv_rpmi_info = {
      }
 
      rpmi_init_transport(num_xports, shm_addr, db_addr, fcm_addr, socket_num,
-                         hartid_base, num_harts);
+                         harts_mask);
 
      num_xports++;
 

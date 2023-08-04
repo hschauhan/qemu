@@ -262,7 +262,7 @@ int handle_rpmi_grp_cppc(struct rpmi_message *msg, int xport_id)
         break;
 
     case RPMI_CPPC_SRV_GET_HART_LIST:
-        int harts_mask =  rpmi_get_harts_mask(xport_id);
+        uint64_t harts_mask =  rpmi_get_harts_mask(xport_id);
         int returned = 0;
 
         resp_data.hart_list.status = 0;

@@ -1156,6 +1156,7 @@ static void create_fdt(RISCVVirtState *s, const MemMapEntry *memmap)
     uint8_t rng_seed[32];
     int i, base_hartid = -1, hart_count = 0,
         rpmi_xports = riscv_socket_count(ms) + 1;
+    uint64_t harts_mask;
 
     ms->fdt = create_device_tree(&s->fdt_size);
     if (!ms->fdt) {
@@ -1220,8 +1221,10 @@ static void create_fdt(RISCVVirtState *s, const MemMapEntry *memmap)
                 }
 
                 flags = 1 << RPMI_XPORT_TYPE_SOCKET;
+                harts_mask = MAKE_64BIT_MASK(base_hartid, hart_count);
             } else {
                 flags = 1 << RPMI_XPORT_TYPE_SOC;
+                harts_mask = 0;
             }
 
             create_fdt_rpmi_nodes(s, i, shm_base + (shm_sz * i),
@@ -1230,7 +1233,7 @@ static void create_fdt(RISCVVirtState *s, const MemMapEntry *memmap)
             riscv_rpmi_create(db_base + (db_sz * i),
                               shm_base + (shm_sz * i), shm_sz,
                               fcm_base + (fcm_sz * i), fcm_sz,
-                              base_hartid, hart_count, flags);
+                              harts_mask, flags);
         }
     } else {
         create_fdt_reset(s, memmap, &phandle);
