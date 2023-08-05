@@ -1035,10 +1035,10 @@ static void create_fdt_rpmi_mbox(RISCVVirtState *s,
     *rpmi_mbox_handle = (*phandle)++;
     name = g_strdup_printf("/soc/mailbox@%llx", (long long)shmem_base);
     qemu_fdt_add_subnode(mc->fdt, name);
-    qemu_fdt_setprop_cell(mc->fdt, name, "ventana,slot-size",
+    qemu_fdt_setprop_cell(mc->fdt, name, "riscv,slot-size",
                           RPMI_QUEUE_SLOT_SIZE);
     qemu_fdt_setprop_cell(mc->fdt, name, "#mbox-cells", 1);
-    qemu_fdt_setprop_string_array(mc->fdt, name, "mbox-names",
+    qemu_fdt_setprop_string_array(mc->fdt, name, "reg-names",
                                   (char **)&regnames, ARRAY_SIZE(regnames));
     qemu_fdt_setprop_cells(mc->fdt,
             name, "reg",
