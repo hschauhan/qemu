@@ -20,6 +20,7 @@
 #include "qemu/main-loop.h"
 #include "qemu/module.h"
 #include "qom/object_interfaces.h"
+#include "hw/acpi/aml-build.h"
 #include "hw/core/cpu.h"
 #include "hw/virtio/virtio.h"
 #include "hw/virtio/vhost.h"
