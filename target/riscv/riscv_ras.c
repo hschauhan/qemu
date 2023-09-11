@@ -2,6 +2,7 @@
  * RISC-V RAS (Reliability, Availability and Serviceability) block
  *
  * Copyright (c) 2022 Rivos Inc
+ * Copyright (c) 2023 Ventana Micro
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 or
@@ -18,6 +19,7 @@
 #include "hw/irq.h"
 #include "riscv_ras.h"
 #include "riscv_ras_reference.h"
+#include "riscv_ras_agent.h"
 
 typedef struct RiscvRasState {
     /*< private >*/
@@ -40,6 +42,7 @@ enum {
 DECLARE_INSTANCE_CHECKER(RiscvRasState, RISCV_RAS, TYPE_RISCV_RAS)
 
 static void coroutine_fn riscv_error_inject(void *opaque);
+static RiscvRasState *g_ras_state = NULL;
 
 int riscv_ras_inject(void *opaque, int record, vaddr addr, uint64_t info)
 {
@@ -81,6 +84,50 @@ static MemTxResult riscv_ras_read_impl(void *opaque, hwaddr addr,
     }
 
     return MEMTX_OK;
+}
+
+int riscv_ras_get_component_errors(RiscvRaSComponentId *comp,
+                                   RiscvRasErrorRecord *comp_recs)
+{
+    RiscvRasState *s = g_ras_state;
+    int error;
+    RiscvRaSComponentId cid;
+    RiscvRasErrorRecord erec;
+
+    qemu_mutex_lock(&s->lock);
+    /*  Match the component ID
+     *  TODO: Need to add multiple components and then check against
+     *  each one of them.
+     */ 
+    error = riscv_ras_read(s->regs, offsetof(RiscvRasComponentRegisters, component_id),
+                           &cid.u64, sizeof(cid));
+    if (error)
+        goto out;
+
+    if (cid.inst_id != comp->inst_id) {
+        error = -1;
+        goto out;
+    }
+
+    /* Read the error record
+     * TODO: Since only one record is implemented right now,
+     * read first. Later need to loop over each one of them.
+     */
+    error = riscv_ras_read(s->regs, offsetof(RiscvRasComponentRegisters, records),
+                           &erec, sizeof(erec));
+    if (error)
+        goto out;
+
+    /* if valid error, report it */
+    if (erec.status_i.v) {
+        memcpy(comp_recs, &erec, sizeof(erec));
+        error = 0;
+    } else
+        error = -2;
+
+out:
+    qemu_mutex_unlock(&s->lock);
+    return error;
 }
 
 static MemTxResult riscv_ras_write_impl(void *opaque, hwaddr addr,
@@ -159,7 +206,8 @@ static const MemoryRegionOps riscv_ras_ops = {
 
 static void riscv_ras_instance_init(Object *obj)
 {
-    RiscvRasState *s = RISCV_RAS(obj);
+    RiscvRasState *s;
+    s = g_ras_state = RISCV_RAS(obj);
     fprintf(stderr, "%s\n", __func__);
     RISCVCPU *cpu = RISCV_CPU(cpu_by_arch_id(0));
 
@@ -167,6 +215,7 @@ static void riscv_ras_instance_init(Object *obj)
     memset(s->regs, 0, sizeof(RiscvRasComponentRegisters));
 
     riscv_ras_init(s->regs, 0x1af4, 0xabcd);
+    riscv_ras_agent_init(s->regs);
 
     memory_region_init_io(&s->iomem, obj, &riscv_ras_ops,
                         s, TYPE_RISCV_RAS, 0x1000);
