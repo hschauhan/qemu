@@ -827,6 +827,13 @@ static void virt_acpi_build(RISCVVirtState *s, AcpiBuildTables *tables)
         build_rsdp(tables->rsdp, tables->linker, &rsdp_data);
     }
 
+    if (s->have_ras) {
+        build_ghes_error_table(tables->hardware_errors, tables->linker);
+        acpi_add_table(table_offsets, tables_blob);
+        acpi_build_hest(tables_blob, tables->linker, s->oem_id,
+                        s->oem_table_id);
+    }
+
     /*
      * The align size is 128, warn if 64k is not enough therefore
      * the align size could be resized.

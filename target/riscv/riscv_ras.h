@@ -18,5 +18,7 @@
 DeviceState *riscv_ras_create(hwaddr);
 
 int riscv_ras_inject(void *opaque, int record, hwaddr addr, uint64_t info);
+int riscv_ras_get_component_errors(RiscvRaSComponentId *comp,
+                                   RiscvRasErrorRecord *comp_recs);
 
 #endif
