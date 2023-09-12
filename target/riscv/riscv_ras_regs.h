@@ -31,7 +31,7 @@ typedef union RiscvRasControl {
         uint16_t rsvd:8;
         uint16_t cust:8;
     };
-    uint64_t u64;
+    uint64_t value;
 } RiscvRasControl;
 
 #define RAS_CTRL_MASK 0xFFFF000001FDull
@@ -63,7 +63,7 @@ typedef union RiscvRasStatus {
 
         uint16_t cec:16;
    };
-   uint64_t u64;
+   uint64_t value;
 } RiscvRasStatus;
 
 #define RAS_STS_MASK 0x7800003FFFFEull
@@ -88,7 +88,7 @@ typedef union RiscvRaSComponentId {
         uint64_t reserved0:24;
         uint8_t version:8;
     };
-    uint64_t u64;
+    uint64_t value;
 } RiscvRaSComponentId;
 
 _Static_assert(sizeof(RiscvRaSComponentId) == sizeof(uint64_t));
@@ -99,7 +99,7 @@ typedef union RiscvRaSVendorId {
         uint16_t imp_id;
         uint16_t reserved;
     };
-    uint64_t u64;
+    uint64_t value;
 } RiscvRaSVendorId;
 
 _Static_assert(sizeof(RiscvRaSVendorId) == sizeof(uint64_t));

@@ -53,7 +53,7 @@ int riscv_ras_inject(void *opaque, int record, vaddr addr, uint64_t info)
     if (record >= RECORD_NUM)
         return EINVAL;
 
-    sts.u64 = 0;
+    sts.value = 0;
     sts.ue = 1;
     sts.at = 3;
     sts.tt = 5;
@@ -100,7 +100,7 @@ int riscv_ras_get_component_errors(RiscvRaSComponentId *comp,
      *  each one of them.
      */ 
     error = riscv_ras_read(s->regs, offsetof(RiscvRasComponentRegisters, component_id),
-                           &cid.u64, sizeof(cid));
+                           &cid.value, sizeof(cid));
     if (error)
         goto out;
 
@@ -113,8 +113,7 @@ int riscv_ras_get_component_errors(RiscvRaSComponentId *comp,
      * TODO: Since only one record is implemented right now,
      * read first. Later need to loop over each one of them.
      */
-    error = riscv_ras_read(s->regs, offsetof(RiscvRasComponentRegisters, records),
-                           &erec, sizeof(erec));
+    error = riscv_ras_read_error_record(s->regs, 0, &erec);
     if (error)
         goto out;
 
@@ -210,12 +209,16 @@ static void riscv_ras_instance_init(Object *obj)
     s = g_ras_state = RISCV_RAS(obj);
     fprintf(stderr, "%s\n", __func__);
     RISCVCPU *cpu = RISCV_CPU(cpu_by_arch_id(0));
+    RiscvRaSComponentId cid[1];
 
     s->regs = (RiscvRasComponentRegisters *)malloc(sizeof(RiscvRasComponentRegisters));
     memset(s->regs, 0, sizeof(RiscvRasComponentRegisters));
 
     riscv_ras_init(s->regs, 0x1af4, 0xabcd);
-    riscv_ras_agent_init(s->regs);
+
+    riscv_ras_read(s->regs, offsetof(RiscvRasComponentRegisters, component_id),
+                   &cid[0].value, sizeof(cid));
+    riscv_ras_agent_init(&cid[0], 1);
 
     memory_region_init_io(&s->iomem, obj, &riscv_ras_ops,
                         s, TYPE_RISCV_RAS, 0x1000);

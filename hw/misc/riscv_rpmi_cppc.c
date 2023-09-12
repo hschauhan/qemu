@@ -120,9 +120,9 @@ struct grp_events cppc_events[RPMI_SRVGRP_ID_MAX_COUNT] = {0};
 /* convert register sparse identifier to register index */
 static uint32_t cppc_get_reg_index(int32_t reg_id)
 {
-    uint32_t idx = -1;
+    uint32_t idx = -1;;
 
-    if (reg_id <= SBI_CPPC_ACPI_LAST && reg_id >= SBI_CPPC_HIGHEST_PERF) {
+    if (reg_id <= SBI_CPPC_ACPI_LAST) {
         idx = reg_id;
     } else if (reg_id == SBI_CPPC_TRANSITION_LATENCY) {
         idx = LAST_REG_IDX - 1;

@@ -35,18 +35,35 @@ int riscv_ras_read(RiscvRasComponentRegisters *regs, uintptr_t addr, uint64_t *o
     return 0;
 }
 
+int riscv_ras_read_error_record(RiscvRasComponentRegisters *regs, uint32_t index,
+                                RiscvRasErrorRecord *record)
+{
+        RiscvRasErrorRecord *rec;
+
+        if (!regs)
+                return EINVAL;
+
+        if (index > regs->component_id.n_err_recs)
+                return ENOENT;
+
+        rec = &regs->records[index];
+
+        memcpy(record, rec, sizeof(RiscvRasErrorRecord));
+
+        return 0;
+}
 
 static uint64_t riscv_ras_write_status(RiscvRasStatus old, RiscvRasStatus new)
 {
-    new.u64 &= RAS_STS_MASK;
+    new.value &= RAS_STS_MASK;
 
     /* Only one error type can be injected. */
     if (new.ce + new.de + new.ue != 1) {
-        return old.u64;
+        return old.value;
     }
 
     if (old.v == 0) {
-        return new.u64;
+        return new.value;
     }
 
     /* Overwrite rules. */
@@ -57,14 +74,14 @@ static uint64_t riscv_ras_write_status(RiscvRasStatus old, RiscvRasStatus new)
        } else {
            old.ce = 1;
        }
-       new.u64 = old.u64;
+       new.value = old.value;
    } else if (new.de && old.ue) {
-       return old.u64;
+       return old.value;
    } else if (new.ue && old.ue) {
        new.mo = 1;
    }
 
-    return new.u64;
+    return new.value;
 
 }
 
@@ -103,7 +120,7 @@ int riscv_ras_write(RiscvRasComponentRegisters *regs, uintptr_t addr, uint64_t v
 
     switch (addr) {
     case 0: /* control_i */
-        ctrl.u64 = reg;
+        ctrl.value = reg;
 //        ctrl.u64 &= RAS_CTRL_MASK;
         if (ctrl.sinv) {
             record->status_i.v = 0;
@@ -116,7 +133,7 @@ int riscv_ras_write(RiscvRasComponentRegisters *regs, uintptr_t addr, uint64_t v
         record->control_i = ctrl;
         break;
     case 8: /* status_i */
-        record->status_i.u64 =
+        record->status_i.value =
             riscv_ras_write_status(record->status_i, (RiscvRasStatus)reg);
         break;
     /* XXX: Allow modification of addr_i and info_i only if status_i.v==0? */
@@ -138,7 +155,7 @@ int riscv_ras_do_inject(RiscvRasErrorRecord *record, RiscvRasStatus sts,
 
     old = record->status_i;
 
-    record->status_i.u64 = riscv_ras_write_status(old, sts);
+    record->status_i.value = riscv_ras_write_status(old, sts);
     record->addr_i = addr;
     record->info_i = info;
 

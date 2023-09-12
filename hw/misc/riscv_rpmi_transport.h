@@ -153,6 +153,7 @@ bool execute_rpmi_hsm_stop(void *env);
 int handle_rpmi_grp_sys_reset(struct rpmi_message *msg, int xport_id);
 int handle_rpmi_grp_suspend(struct rpmi_message *msg, int xport_id);
 bool execute_rpmi_suspend(void *env);
+int handle_rpmi_grp_ras_agent(struct rpmi_message *msg, int xport_id);
 
 #endif
 
