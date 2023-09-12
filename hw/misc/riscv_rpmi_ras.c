@@ -32,6 +32,7 @@
 #include "exec/address-spaces.h"
 #include "hw/riscv/numa.h"
 #include "riscv_rpmi_transport.h"
+#include "target/riscv/riscv_ras_agent.h"
 
 target_ulong helper_csrr(CPURISCVState *env, int csr);
 
@@ -46,20 +47,16 @@ enum {
     RPMI_RAS_ENABLED
 };
 
-int handle_rpmi_grp_ras(struct rpmi_message *msg, int xport_id)
+int handle_rpmi_grp_ras_agent(struct rpmi_message *msg, int xport_id)
 {
     int svc_id = GET_SERVICE_ID(msg);
-    int32_t rc, reg_index;
-    uint32_t event_id = 0;
+    int32_t rc;
     uint32_t qid = RPMI_QUEUE_IDX_P2A_ACK;
-    uint32_t hart_id, reg_id = 0;
+    uint32_t hart_id;
     uint8_t queue_data[RPMI_QUEUE_SLOT_SIZE];
     uint32_t *req_data = (uint32_t *)msg->data;
     struct rpmi_message *tmsgbuf = (struct rpmi_message *)queue_data;
-    uint32_t resp_dlen = 0, data_lo, data_hi;
-    uint64_t data = 0;
-    uint64_t chan_addr;
-    CPUState *cpu;
+    uint32_t resp_dlen = 0;
 
     rpmi_ras_resp_data_t resp_data;
 
@@ -70,17 +67,14 @@ int handle_rpmi_grp_ras(struct rpmi_message *msg, int xport_id)
                 __func__, svc_id);
     switch (svc_id) {
     case RPMI_RAS_SRV_PROBE_REQ:
-        resp_data.probe.version = RAS_AGENT_VERSION;
+        resp_data.probe.version = ras_get_agent_version();
         resp_dlen = sizeof(resp_data.probe);
         break;
 
     case RPMI_RAS_SRV_SYNC_HART_ERR_REQ:
         hart_id = req_data[0];
-        cpu = cpu_by_arch_id(hart_id);
-
-        CPURISCVState *env;
-
-        resp_dlen = sizeof(resp_data.read_reg);
+        riscv_ras_agent_synchronize_errors(hart_id, &resp_data.pend_err_resp);
+        resp_dlen = sizeof(resp_data.pend_err_resp);
         break;
 
     default:

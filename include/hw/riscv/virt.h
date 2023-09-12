@@ -95,6 +95,10 @@ enum {
 };
 
 enum {
+    VIRT_HIGH_PCIE_MMIO = VIRT_LAST_MEMMAP,
+};
+
+enum {
     UART0_IRQ = 10,
     RTC_IRQ = 11,
     VIRTIO_IRQ = 1, /* 1 to 8 */

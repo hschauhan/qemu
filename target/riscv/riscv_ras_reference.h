@@ -49,6 +49,9 @@ int riscv_ras_write(RiscvRasComponentRegisters *regs, uintptr_t addr, uint64_t v
 int riscv_ras_read(RiscvRasComponentRegisters *regs, uintptr_t addr, uint64_t *out,
                         unsigned size);
 
+int riscv_ras_read_error_record(RiscvRasComponentRegisters *regs, uint32_t index,
+                                RiscvRasErrorRecord *record);
+
 /**
  * @brief Initialize RAS emulation, set all registers to their default values.
  * Fill in the provided vendor information.

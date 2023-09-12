@@ -11,19 +11,14 @@
 #ifndef _RISCV_RAS_AGENT_H
 #define _RISCV_RAS_AGENT_H
 
-#include "rpmi_msgprot.h"
+#include "hw/misc/riscv_rpmi_transport.h"
 #include "riscv_ras_regs.h"
 
 /* FIXME: Encode */
 #define RAS_AGENT_VERSION    1
 
-int ras_agent_init(RiscvRasComponentRegisters *regs);
-
-static int ras_get_agent_version(void)
-{
-    return RAS_AGENT_VERSION;
-}
-
-int ras_agent_synchronize_errors(int hart_id, struct rpmi_ras_sync_err_resp *resp);
+int riscv_ras_agent_init(RiscvRaSComponentId *comps, int nr_comps);
+int ras_get_agent_version(void);
+int riscv_ras_agent_synchronize_errors(int hart_id, struct rpmi_ras_sync_err_resp *resp);
 
 #endif /* _RISCV_RAS_AGENT_H */
