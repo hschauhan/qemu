@@ -62,6 +62,7 @@ struct RISCVVirtState {
     char *oem_id;
     char *oem_table_id;
     OnOffAuto acpi;
+    DeviceState *acpi_dev;
     const MemMapEntry *memmap;
     struct GPEXHost *gpex_host;
 };
@@ -91,6 +92,7 @@ enum {
     VIRT_PLATFORM_BUS,
     VIRT_PCIE_ECAM,
     VIRT_RAS,
+    VIRT_ACPI_GED,
     VIRT_LAST_MEMMAP /* Keep this entry always last */
 };
 

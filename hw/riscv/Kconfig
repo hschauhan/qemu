@@ -52,6 +52,7 @@ config RISCV_VIRT
     select ACPI
     select ACPI_PCI
     select ACPI_APEI
+    select ACPI_HW_REDUCED
 
 config SHAKTI_C
     bool

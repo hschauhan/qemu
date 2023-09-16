@@ -39,6 +39,7 @@
 #include "qemu/error-report.h"
 #include "sysemu/reset.h"
 #include "hw/acpi/ghes.h"
+#include "hw/acpi/generic_event_device.h"
 
 #define ACPI_BUILD_TABLE_SIZE             0x20000
 #define ACPI_BUILD_INTC_ID(socket, index) ((socket << 24) | (index))
@@ -783,6 +784,13 @@ static void virt_acpi_build(RISCVVirtState *s, AcpiBuildTables *tables)
     acpi_add_table(table_offsets, tables_blob);
     build_rhct(tables_blob, tables->linker, s);
 
+    if (s->have_ras) {
+        build_ghes_error_table(tables->hardware_errors, tables->linker);
+        acpi_add_table(table_offsets, tables_blob);
+        acpi_build_hest(tables_blob, tables->linker, ACPI_HEST_SRC_ID_SSE,
+                        s->oem_id, s->oem_table_id);
+    }
+
     acpi_add_table(table_offsets, tables_blob);
     {
         AcpiMcfgInfo mcfg = {
@@ -807,13 +815,6 @@ static void virt_acpi_build(RISCVVirtState *s, AcpiBuildTables *tables)
             .rsdt_tbl_offset = NULL,
         };
         build_rsdp(tables->rsdp, tables->linker, &rsdp_data);
-    }
-
-    if (s->have_ras) {
-        build_ghes_error_table(tables->hardware_errors, tables->linker);
-        acpi_add_table(table_offsets, tables_blob);
-        acpi_build_hest(tables_blob, tables->linker, s->oem_id,
-                        s->oem_table_id);
     }
 
     /*
@@ -890,6 +891,7 @@ void virt_acpi_setup(RISCVVirtState *s)
 {
     AcpiBuildTables tables;
     AcpiBuildState *build_state;
+    AcpiGedState *acpi_ged_state;
 
     build_state = g_malloc0(sizeof *build_state);
 
@@ -906,6 +908,13 @@ void virt_acpi_setup(RISCVVirtState *s)
                                                build_state,
                                                tables.linker->cmd_blob,
                                                ACPI_BUILD_LOADER_FILE);
+
+    if (s->have_ras) {
+        assert(s->acpi_dev);
+        acpi_ged_state = ACPI_GED(s->acpi_dev);
+        acpi_ghes_add_fw_cfg(&acpi_ged_state->ghes_state,
+                             s->fw_cfg, tables.hardware_errors);
+    }
 
     build_state->rsdp_mr = acpi_add_rom_blob(virt_acpi_build_update,
                                              build_state, tables.rsdp,

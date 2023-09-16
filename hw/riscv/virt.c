@@ -56,6 +56,7 @@
 #include "hw/misc/riscv_rpmi.h"
 #include "hw/misc/riscv_rpmi_transport.h"
 #include "hw/misc/rpmi_clock.h"
+#include "hw/acpi/generic_event_device.h"
 
 /* KVM AIA only supports APLIC MSI. APLIC Wired is always emulated by QEMU. */
 static bool virt_use_kvm_aia(RISCVVirtState *s)
@@ -73,6 +74,7 @@ static const MemMapEntry virt_memmap[] = {
     [VIRT_PCIE_PIO] =     {  0x3000000,       0x10000 },
     [VIRT_RAS] =          {  0x4000000,       0x10000 },    
     [VIRT_PLATFORM_BUS] = {  0x5000000,     0x2000000 },
+    [VIRT_ACPI_GED] =     {  0x7000000,           0x8 },
     [VIRT_PLIC] =         {  0xc000000, VIRT_PLIC_SIZE(VIRT_CPUS_MAX * 2) },
     [VIRT_APLIC_M] =      {  0xc000000, APLIC_SIZE(VIRT_CPUS_MAX) },
     [VIRT_APLIC_S] =      {  0xd000000, APLIC_SIZE(VIRT_CPUS_MAX) },
@@ -1474,6 +1476,21 @@ static DeviceState *virt_create_plic(const MemMapEntry *memmap, int socket,
     return ret;
 }
 
+static inline DeviceState *create_acpi_ged(void)
+{
+    DeviceState *dev;
+    uint32_t event = ACPI_GED_PWR_DOWN_EVT;
+
+    dev = qdev_new(TYPE_ACPI_GED);
+    qdev_prop_set_uint32(dev, "ged-event", event);
+
+    sysbus_mmio_map(SYS_BUS_DEVICE(dev), 0, virt_memmap[VIRT_ACPI_GED].base);
+
+    sysbus_realize_and_unref(SYS_BUS_DEVICE(dev), &error_fatal);
+
+    return dev;
+}
+
 static DeviceState *virt_create_aia(RISCVVirtAIAType aia_type, int aia_guests,
                                     const MemMapEntry *memmap, int socket,
                                     int base_hartid, int hart_count)
@@ -1824,9 +1841,11 @@ static void virt_machine_init(MachineState *machine)
         sifive_test_create(memmap[VIRT_TEST].base);
     }
 
-    /* RAS Extension device */
-    riscv_ras_create(memmap[VIRT_RAS].base);
-
+    if (s->have_ras) {
+            s->acpi_dev = create_acpi_ged();
+            /* RAS Extension device */
+            riscv_ras_create(memmap[VIRT_RAS].base);
+    }
 
     /* VirtIO MMIO devices */
     for (i = 0; i < VIRTIO_COUNT; i++) {

@@ -327,6 +327,15 @@ static void build_ghes_v2(GArray *table_data, int source_id, BIOSLinker *linker)
          */
         build_ghes_hw_error_notification(table_data, ACPI_GHES_NOTIFY_SEA);
         break;
+
+    case ACPI_HEST_SRC_ID_SSE:
+        /*
+         * Notification Structure
+         * Enable Riscv Supervisor Software Events
+         */
+        build_ghes_hw_error_notification(table_data, ACPI_GHES_NOTIFY_SSE);
+        break;
+
     default:
         error_report("Not support this error source");
         abort();
@@ -359,7 +368,7 @@ static void build_ghes_v2(GArray *table_data, int source_id, BIOSLinker *linker)
 }
 
 /* Build Hardware Error Source Table */
-void acpi_build_hest(GArray *table_data, BIOSLinker *linker,
+void acpi_build_hest(GArray *table_data, BIOSLinker *linker, uint8_t notif_type,
                      const char *oem_id, const char *oem_table_id)
 {
     AcpiTable table = { .sig = "HEST", .rev = 1,
@@ -369,7 +378,7 @@ void acpi_build_hest(GArray *table_data, BIOSLinker *linker,
 
     /* Error Source Count */
     build_append_int_noprefix(table_data, ACPI_GHES_ERROR_SOURCE_COUNT, 4);
-    build_ghes_v2(table_data, ACPI_HEST_SRC_ID_SEA, linker);
+    build_ghes_v2(table_data, notif_type, linker);
 
     acpi_table_end(linker, &table);
 }

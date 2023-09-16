@@ -52,12 +52,15 @@ enum AcpiGhesNotifyType {
     ACPI_GHES_NOTIFY_GSIV = 10,
     /* Software Delegated Exception, ACPI 6.2: 18.3.2.9, Table 18-383 */
     ACPI_GHES_NOTIFY_SDEI = 11,
+    /* Riscv Supervisor Software Event */
+    ACPI_GHES_NOTIFY_SSE = 12,
     /* 12 and greater are reserved */
-    ACPI_GHES_NOTIFY_RESERVED = 12
+    ACPI_GHES_NOTIFY_RESERVED = 13
 };
 
 enum {
     ACPI_HEST_SRC_ID_SEA = 0,
+    ACPI_HEST_SRC_ID_SSE = 1,
     /* future ids go here */
     ACPI_HEST_SRC_ID_RESERVED,
 };
@@ -68,7 +71,7 @@ typedef struct AcpiGhesState {
 } AcpiGhesState;
 
 void build_ghes_error_table(GArray *hardware_errors, BIOSLinker *linker);
-void acpi_build_hest(GArray *table_data, BIOSLinker *linker,
+void acpi_build_hest(GArray *table_data, BIOSLinker *linker, uint8_t notif_type,
                      const char *oem_id, const char *oem_table_id);
 void acpi_ghes_add_fw_cfg(AcpiGhesState *vms, FWCfgState *s,
                           GArray *hardware_errors);
