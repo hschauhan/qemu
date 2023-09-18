@@ -287,7 +287,7 @@ void build_ghes_error_table(GArray *hardware_errors, BIOSLinker *linker)
 }
 
 /* Build Generic Hardware Error Source version 2 (GHESv2) */
-static void build_ghes_v2(GArray *table_data, int source_id, BIOSLinker *linker)
+static void build_ghes_v2(GArray *table_data, int source_id, int notif_type, BIOSLinker *linker)
 {
     uint64_t address_offset;
     /*
@@ -319,7 +319,7 @@ static void build_ghes_v2(GArray *table_data, int source_id, BIOSLinker *linker)
         address_offset + GAS_ADDR_OFFSET, sizeof(uint64_t),
         ACPI_GHES_ERRORS_FW_CFG_FILE, source_id * sizeof(uint64_t));
 
-    switch (source_id) {
+    switch (notif_type) {
     case ACPI_HEST_SRC_ID_SEA:
         /*
          * Notification Structure
@@ -378,7 +378,7 @@ void acpi_build_hest(GArray *table_data, BIOSLinker *linker, uint8_t notif_type,
 
     /* Error Source Count */
     build_append_int_noprefix(table_data, ACPI_GHES_ERROR_SOURCE_COUNT, 4);
-    build_ghes_v2(table_data, notif_type, linker);
+    build_ghes_v2(table_data, 0, notif_type, linker);
 
     acpi_table_end(linker, &table);
 }
