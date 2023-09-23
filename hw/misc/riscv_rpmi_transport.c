@@ -136,7 +136,9 @@ void rpmi_init_transport(int xport_id, hwaddr shm_addr, hwaddr reg_addr,
     if (socket_num == -1) {
         /* initialize SOC transport */
         xport_ctx->service_grp_mask |= ((1 << RPMI_SRVGRP_SYSTEM_RESET) |
-                                        (1 << RPMI_SRVGRP_SYSTEM_SUSPEND));
+                                        (1 << RPMI_SRVGRP_SYSTEM_SUSPEND) |
+                                        (1 << RPMI_SRVGRP_RAS_AGENT));
+
         if (clock_data)
             xport_ctx->service_grp_mask |= (1 << RPMI_SRVGRP_CLOCK);
     }

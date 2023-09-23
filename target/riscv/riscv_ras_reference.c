@@ -53,6 +53,24 @@ int riscv_ras_read_error_record(RiscvRasComponentRegisters *regs, uint32_t index
         return 0;
 }
 
+int riscv_ras_write_error_record(RiscvRasComponentRegisters *regs, uint32_t index,
+                                 RiscvRasErrorRecord *record)
+{
+        RiscvRasErrorRecord *rec;
+
+        if (!regs)
+                return EINVAL;
+
+        if (index > regs->component_id.n_err_recs)
+                return ENOENT;
+
+        rec = &regs->records[index];
+
+        memcpy(rec, record, sizeof(RiscvRasErrorRecord));
+
+        return 0;
+}
+
 static uint64_t riscv_ras_write_status(RiscvRasStatus old, RiscvRasStatus new)
 {
     new.value &= RAS_STS_MASK;
@@ -166,7 +184,7 @@ int riscv_error_injection_tick(RiscvRasErrorRecord *record)
 {
     int irq = 0;
 
-        /* Check if the injection was cancelled. */
+    /* Check if the injection was cancelled. */
     if (record->control_i.eid == 0) {
         return RISCV_RAS_INJECT_ABORT;
     }
@@ -177,7 +195,9 @@ int riscv_error_injection_tick(RiscvRasErrorRecord *record)
         return RISCV_RAS_INJECT_ABORT;
     }
 
+    qemu_log_mask(LOG_GUEST_ERROR, "%s: Status: 0x%llx\n", __func__, (unsigned long long)record->status_i.value);
     record->status_i.v = 1;
+    qemu_log_mask(LOG_GUEST_ERROR, "%s: Status: 0x%llx\n", __func__, (unsigned long long)record->status_i.value);
 
     if (record->status_i.ue) {
         irq = record->control_i.uues;

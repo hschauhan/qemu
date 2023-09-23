@@ -184,8 +184,8 @@ enum rpmi_servicegroup_id {
         RPMI_SRVGRP_SYSTEM_SUSPEND = 0x00003,
         RPMI_SRVGRP_HSM = 0x00004,
         RPMI_SRVGRP_CPPC = 0x00005,
-        RPMI_SRVGRP_CLOCK = 0x00007,
         RPMI_SRVGRP_RAS_AGENT = 0x00006,
+        RPMI_SRVGRP_CLOCK = 0x00007,
         RPMI_SRVGRP_ID_MAX_COUNT,
 };
 
@@ -503,6 +503,7 @@ struct rpmi_ras_probe_req {
 };
 
 struct rpmi_ras_probe_resp {
+        s32 status;
 	u32 version;
 };
 
@@ -528,7 +529,7 @@ struct rpmi_ras_pend_vecs_req {
  * remaining vectors by GET_PEND_VECS request.
  */
 struct rpmi_ras_sync_err_resp {
-	s32 status;
+	u32 status;
 	u32 remaining;
 	u32 returned;
 #define MAX_PEND_VECS	((RPMI_MSG_DATA_SIZE - (sizeof(u32) * 3)) / sizeof(u32))

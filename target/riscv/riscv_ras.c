@@ -11,6 +11,7 @@
 
 #include "qemu/osdep.h"
 #include "qemu/coroutine.h"
+#include "qemu/log.h"
 #include "qapi/error.h"
 #include "hw/sysbus.h"
 #include "target/riscv/cpu.h"
@@ -117,9 +118,15 @@ int riscv_ras_get_component_errors(RiscvRaSComponentId *comp,
     if (error)
         goto out;
 
+    qemu_log_mask(LOG_GUEST_ERROR, "%s: Status: 0x%llx (Valid? %s)\n",
+                  __func__, (unsigned long long)erec.status_i.value,
+                  (erec.status_i.v ? "YES" : "NO"));
+
     /* if valid error, report it */
-    if (erec.status_i.v) {
+    if (!erec.status_i.v) {
         memcpy(comp_recs, &erec, sizeof(erec));
+        comp_recs->status_i.v = 1;
+        comp_recs->addr_i = 0x4000000;
         error = 0;
     } else
         error = -2;

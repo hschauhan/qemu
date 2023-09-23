@@ -67,7 +67,10 @@ int handle_rpmi_grp_ras_agent(struct rpmi_message *msg, int xport_id)
                 __func__, svc_id);
     switch (svc_id) {
     case RPMI_RAS_SRV_PROBE_REQ:
+        resp_data.probe.status = 0;
         resp_data.probe.version = ras_get_agent_version();
+        qemu_log_mask(LOG_GUEST_ERROR, "%s: RAS agent version: %d\n",
+                     __func__, resp_data.probe.version);
         resp_dlen = sizeof(resp_data.probe);
         break;
 
@@ -78,20 +81,25 @@ int handle_rpmi_grp_ras_agent(struct rpmi_message *msg, int xport_id)
         break;
 
     default:
-        qemu_log_mask(LOG_GUEST_ERROR, "%s: Unhandled cppc service ID: %x\n",
+        qemu_log_mask(LOG_GUEST_ERROR, "%s: Unhandled RAS service ID: %x\n",
                 __func__, svc_id);
         return -1;
     }
 
     rpmi_pack_message(RPMI_MSG_ACKNOWLDGEMENT,
-            RPMI_SRVGRP_CPPC,
-            svc_id, GET_TOKEN(msg),
-            resp_dlen, &resp_data, tmsgbuf);
+                      RPMI_SRVGRP_RAS_AGENT,
+                      svc_id, GET_TOKEN(msg),
+                      resp_dlen, &resp_data, tmsgbuf);
 
     rc = smq_enqueue(xport_id, qid, tmsgbuf);
     if (rc) {
+            qemu_log_mask(LOG_GUEST_ERROR,
+                         "%s: smq_enqueue failed, rc: %x\n",
+                         __func__, rc);
         return -1;
     }
+
+    qemu_log_mask(LOG_GUEST_ERROR, "%s: Success\n", __func__);
 
     return 0;
 }
