@@ -29,6 +29,7 @@
 #include "hw/qdev-properties.h"
 #include "hw/char/serial.h"
 #include "target/riscv/cpu.h"
+#include "target/riscv/riscv_reri_hart_dev.h"
 #include "hw/core/sysbus-fdt.h"
 #include "target/riscv/pmu.h"
 #include "hw/riscv/riscv_hart.h"
@@ -55,6 +56,7 @@
 #include "hw/misc/riscv_rpmi.h"
 #include "hw/misc/riscv_rpmi_transport.h"
 #include "hw/misc/rpmi_clock.h"
+#include "hw/acpi/generic_event_device.h"
 
 /* KVM AIA only supports APLIC MSI. APLIC Wired is always emulated by QEMU. */
 static bool virt_use_kvm_aia(RISCVVirtState *s)
@@ -1062,6 +1064,20 @@ static void create_fdt_flash(RISCVVirtState *s, const MemMapEntry *memmap)
     g_free(name);
 }
 
+static void create_fdt_reri_harts(RISCVVirtState *s, const MemMapEntry *memmap)
+{
+    char *name;
+    MachineState *mc = MACHINE(s);
+
+    name = g_strdup_printf("/soc/edac-harts@%lx", (long)memmap[VIRT_RERI_BANK_HARTS].base);
+    qemu_fdt_add_subnode(mc->fdt, name);
+    qemu_fdt_setprop_string(mc->fdt, name, "compatible",
+        "rivos,rivos-edac");
+    qemu_fdt_setprop_sized_cells(mc->fdt, name, "reg",
+        2, memmap[VIRT_RERI_BANK_HARTS].base, 2, memmap[VIRT_RERI_BANK_HARTS].size);
+    g_free(name);
+}
+
 static void create_fdt_fw_cfg(RISCVVirtState *s, const MemMapEntry *memmap)
 {
     char *nodename;
@@ -1342,6 +1358,7 @@ static void create_fdt(RISCVVirtState *s, const MemMapEntry *memmap)
     qemu_guest_getrandom_nofail(rng_seed, sizeof(rng_seed));
     qemu_fdt_setprop(ms->fdt, "/chosen", "rng-seed",
                      rng_seed, sizeof(rng_seed));
+    create_fdt_reri_harts(s, memmap);
 }
 
 static inline DeviceState *gpex_pcie_init(MemoryRegion *sys_mem,
@@ -1458,6 +1475,21 @@ static DeviceState *virt_create_plic(const MemMapEntry *memmap, int socket,
     g_free(plic_hart_config);
 
     return ret;
+}
+
+static inline DeviceState *create_acpi_ged(hwaddr base)
+{
+    DeviceState *dev;
+    uint32_t event = ACPI_GED_PWR_DOWN_EVT;
+
+    dev = qdev_new(TYPE_ACPI_GED);
+    qdev_prop_set_uint32(dev, "ged-event", event);
+
+    sysbus_mmio_map(SYS_BUS_DEVICE(dev), 0, base);
+
+    sysbus_realize_and_unref(SYS_BUS_DEVICE(dev), &error_fatal);
+
+    return dev;
 }
 
 static DeviceState *virt_create_aia(RISCVVirtAIAType aia_type, int aia_guests,
@@ -1808,6 +1840,16 @@ static void virt_machine_init(MachineState *machine)
     if (!s->have_rpmi) {
         /* SiFive Test MMIO device */
         sifive_test_create(memmap[VIRT_TEST].base);
+    }
+
+    if (s->have_ras) {
+        /*
+         * Location where EDK2 will patch the allocated base address
+         * of Error status and CPER records.
+         */
+        s->acpi_dev = create_acpi_ged(virt_memmap[VIRT_ACPI_GED].base);
+        /* RERI HART device emulator */
+        riscv_create_harts_reri_dev(memmap[VIRT_RERI_BANK_HARTS].base);
     }
 
     /* VirtIO MMIO devices */
