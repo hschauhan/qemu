@@ -29,7 +29,7 @@
 #include "hw/qdev-properties.h"
 #include "hw/char/serial.h"
 #include "target/riscv/cpu.h"
-#include "target/riscv/riscv_reri_hart_dev.h"
+#include "hw/riscv/riscv_reri_hart_dev.h"
 #include "hw/core/sysbus-fdt.h"
 #include "target/riscv/pmu.h"
 #include "hw/riscv/riscv_hart.h"
