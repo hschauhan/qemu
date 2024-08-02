@@ -38,6 +38,7 @@
 #include "hw/riscv/virt.h"
 #include "hw/riscv/boot.h"
 #include "hw/riscv/numa.h"
+#include "hw/riscv/riscv_reri_hart_dev.h"
 #include "kvm/kvm_riscv.h"
 #include "hw/firmware/smbios.h"
 #include "hw/intc/riscv_aclint.h"
@@ -1925,6 +1926,11 @@ static void virt_machine_init(MachineState *machine)
         sifive_test_create(memmap[VIRT_TEST].base);
     }
 
+    if (s->have_reri) {
+        /* RERI HART device emulator */
+        riscv_create_harts_reri_dev(memmap[VIRT_RERI_BANK_HARTS].base);
+    }
+
     /* VirtIO MMIO devices */
     for (i = 0; i < VIRTIO_COUNT; i++) {
         sysbus_create_simple("virtio-mmio",
@@ -2099,6 +2105,20 @@ static void virt_set_rpmi(Object *obj, bool value, Error **errp)
     s->have_rpmi = value;
 }
 
+static bool virt_get_reri(Object *obj, Error **errp)
+{
+    RISCVVirtState *s = RISCV_VIRT_MACHINE(obj);
+
+    return s->have_reri;
+}
+
+static void virt_set_reri(Object *obj, bool value, Error **errp)
+{
+    RISCVVirtState *s = RISCV_VIRT_MACHINE(obj);
+
+    s->have_reri = value;
+}
+
 bool virt_is_acpi_enabled(RISCVVirtState *s)
 {
     return s->acpi != ON_OFF_AUTO_OFF;
@@ -2235,6 +2255,11 @@ static void virt_machine_class_init(ObjectClass *oc, void *data)
     object_class_property_set_description(oc, "rpmi",
                                           "Set on/off to enable/disable "
                                           "emulating RPMI devices");
+    object_class_property_add_bool(oc, "reri", virt_get_reri,
+                                   virt_set_reri);
+    object_class_property_set_description(oc, "reri",
+                                          "Set on/off to enable/disable "
+                                          "RERI support");
 }
 
 static const TypeInfo virt_machine_typeinfo = {
