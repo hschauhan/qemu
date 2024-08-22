@@ -1042,6 +1042,7 @@ static void create_fdt_virtio_iommu(RISCVVirtState *s, uint16_t bdf)
 }
 
 static void create_fdt_iommu_sys(RISCVVirtState *s, uint32_t irq_chip,
+                                 uint32_t msi_phandle,
                                  uint32_t *iommu_sys_phandle)
 {
     const char comp[] = "riscv,iommu";
@@ -1080,6 +1081,8 @@ static void create_fdt_iommu_sys(RISCVVirtState *s, uint32_t irq_chip,
         iommu_irq_map[1], FDT_IRQ_TYPE_EDGE_LOW,
         iommu_irq_map[2], FDT_IRQ_TYPE_EDGE_LOW,
         iommu_irq_map[3], FDT_IRQ_TYPE_EDGE_LOW);
+
+    qemu_fdt_setprop_cell(fdt, iommu_node, "msi-parent", msi_phandle);
 
     *iommu_sys_phandle = iommu_phandle;
 }
@@ -1121,7 +1124,8 @@ static void finalize_fdt(RISCVVirtState *s)
     create_fdt_virtio(s, virt_memmap, irq_virtio_phandle);
 
     if (virt_is_iommu_sys_enabled(s)) {
-        create_fdt_iommu_sys(s, irq_mmio_phandle, &iommu_sys_phandle);
+        create_fdt_iommu_sys(s, irq_mmio_phandle, msi_pcie_phandle,
+                             &iommu_sys_phandle);
     }
     create_fdt_pcie(s, virt_memmap, irq_pcie_phandle, msi_pcie_phandle,
                     iommu_sys_phandle);
