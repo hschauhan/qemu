@@ -104,6 +104,17 @@ static const MemMapEntry virt_memmap[] = {
 
 #define APEI_MEM_SZ			0x80000UL
 
+/*
+ * NOTE: IDs after this shouldn't overlap with HART IDs. The HART IDs are error source IDs for
+ * the HARTs
+ */
+#define DEV_SRC_ID_BASE                 256
+#define LOCAL_SSE_RAS_EVT               0x0
+#define GLOBAL_SSE_RAS_EVT              0x8000
+#define GLOBAL_SSE_EVT_START            GLOBAL_SSE_RAS_EVT + 1
+
+#define HAVE_RERI_DRAM_DEVICE           0
+
 /* PCIe high mmio is fixed for RV32 */
 #define VIRT32_HIGH_PCIE_MMIO_BASE  0x300000000ULL
 #define VIRT32_HIGH_PCIE_MMIO_SIZE  (4 * GiB)
@@ -1013,12 +1024,11 @@ static void create_fdt_flash(RISCVVirtState *s, const MemMapEntry *memmap)
 }
 
 static void create_fdt_reri_harts(RISCVVirtState *s, const MemMapEntry *memmap,
-                                  uint32_t *svec, uint32_t *sid,
-                                  uint32_t *cpu_phandles)
+                                  uint32_t svec, uint32_t *cpu_phandles)
 {
     char *name;
     MachineState *mc = MACHINE(s);
-    uint32_t sse_vector, src_id, *cpu_fdt_phandles;
+    uint32_t *cpu_fdt_phandles;
     int i;
 
     cpu_fdt_phandles = g_new0(uint32_t, mc->smp.cpus);
@@ -1033,20 +1043,17 @@ static void create_fdt_reri_harts(RISCVVirtState *s, const MemMapEntry *memmap,
     qemu_fdt_setprop_sized_cells(mc->fdt, name, "reg",
         2, memmap[VIRT_RERI_BANK_HARTS].base, 2, memmap[VIRT_RERI_BANK_HARTS].size);
 
-    sse_vector = ++(*svec);
-    src_id=++(*sid);
-    *svec += mc->smp.cpus;
-    *sid += mc->smp.cpus;
-    qemu_fdt_setprop_cell(mc->fdt, name, "sse-vector", sse_vector);
+    qemu_fdt_setprop_cell(mc->fdt, name, "sse-vector", svec);
+    /* NOTE: The HART ID is the error source ID for harts in virt platform */
     qemu_fdt_setprop(mc->fdt, name, "target-harts",
                      cpu_fdt_phandles, sizeof(*cpu_fdt_phandles) * mc->smp.cpus);
-    qemu_fdt_setprop_cell(mc->fdt, name, "source-id", src_id);
     qemu_fdt_setprop_cell(mc->fdt, name, "notif-type", 1);
 
     g_free(name);
     g_free(cpu_fdt_phandles);
 }
 
+#if HAVE_RERI_DRAM_DEVICE
 static void create_fdt_reri_dram(RISCVVirtState *s, const MemMapEntry *memmap,
                                  uint32_t *svec, uint32_t *sid)
 {
@@ -1067,6 +1074,7 @@ static void create_fdt_reri_dram(RISCVVirtState *s, const MemMapEntry *memmap,
     qemu_fdt_setprop_cell(mc->fdt, name, "notif-type", 1);
     g_free(name);
 }
+#endif
 
 static void create_fdt_apei_res_mem(RISCVVirtState *s, const MemMapEntry *memmap,
                                     uint64_t base, uint64_t size,
@@ -1116,7 +1124,7 @@ static void create_reri_nodes(RISCVVirtState *s, uint32_t *phandle,
                               uint32_t *cpu_phandles)
 {
     MachineState *ms = MACHINE(s);
-    uint32_t reri_res_mem_phandle = 0, sse_vecs = 0, src_ids = 0;
+    uint32_t reri_res_mem_phandle = 0;
     uint64_t ghes_mem_addr;
 
     ghes_mem_addr = riscv_compute_apei_addr(virt_memmap[VIRT_DRAM].base,
@@ -1127,8 +1135,9 @@ static void create_reri_nodes(RISCVVirtState *s, uint32_t *phandle,
     create_fdt_apei_res_mem(s, virt_memmap, ghes_mem_addr, APEI_MEM_SZ, phandle,
                             &reri_res_mem_phandle);
     create_fdt_reri_base_node(s, reri_res_mem_phandle);
-    create_fdt_reri_harts(s, virt_memmap, &sse_vecs, &src_ids, cpu_phandles);
-    create_fdt_reri_dram(s, virt_memmap, &sse_vecs, &src_ids);
+
+    /* Local RAS event for HARTS and HART ID as error source id */
+    create_fdt_reri_harts(s, virt_memmap, LOCAL_SSE_RAS_EVT, cpu_phandles);
 }
 
 static void create_fdt_fw_cfg(RISCVVirtState *s, const MemMapEntry *memmap)
